@@ -6,9 +6,9 @@ public class BoardManager : MonoBehaviour {
 
     public static BoardManager Instance { set; get; }
     private bool [,] allowedMoves { set; get; }
-
-
-
+    private int[] nextBeat = new int[8];
+    public bool next = false;
+    public bool move = false;
     public Pawn [,] Pawns { set; get; }
     private Pawn selectedPawn;
 
@@ -23,8 +23,8 @@ public class BoardManager : MonoBehaviour {
     private Quaternion orientation = Quaternion.Euler(0, 180, 0);
 
     public bool isWhiteTurn = true;
-
-
+    public bool isFirstRound = true;
+    public bool didBeat = false;
     private void Start()
     {
         Instance = this;
@@ -33,23 +33,47 @@ public class BoardManager : MonoBehaviour {
 
     private void Update()
     {
-        UpdateSelection();
-        DrawBoard();
-        if(Input.GetMouseButtonDown(0))
-        {
-            if(selectionX >= 0 && selectionY >= 0)
+            if(didBeat)
             {
-                if(selectedPawn == null)
+                isWhiteTurn = !isWhiteTurn;
+                selectedPawn = Pawns[selectionX, selectionY];
+                if (!NextBeating(selectedPawn.CurrentX, selectedPawn.CurrentY))
                 {
-                    SelectPawn(selectionX, selectionY);
+                    isWhiteTurn = !isWhiteTurn;
+                    BoardHighlights.Instance.HideHighlights();
+                    selectedPawn = null;
+                    didBeat = false;
+                    return;
                 }
-                else
+                else if (NextBeating(selectedPawn.CurrentX, selectedPawn.CurrentY))
+                {                  
+                    allowedMoves = Pawns[selectedPawn.CurrentX, selectedPawn.CurrentY].PossibleMove();
+                    BoardHighlights.Instance.HighlightAllowedMoves(allowedMoves);
+                    didBeat = false;
+                }
+
+            }
+
+        if (isWaitForMouseClickIsRunning == false)
+                UpdateSelection();
+            DrawBoard();
+            if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1))
+            {
+                if (selectionX >= 0 && selectionY >= 0)
                 {
-                    MovePawn(selectionX, selectionY);
+                    if (selectedPawn == null)
+                    {
+                        SelectPawn(selectionX, selectionY);
+                    }
+                    else
+                    {                       
+                        StartCoroutine(MovePawn(selectionX, selectionY));
+                    }
                 }
             }
-        }
+
     }
+
 
 
     private void SelectPawn(int x, int y)
@@ -63,37 +87,387 @@ public class BoardManager : MonoBehaviour {
         BoardHighlights.Instance.HighlightAllowedMoves(allowedMoves);
     }
 
-    private void MovePawn(int x, int y)
+    public bool isWaitForMouseClickIsRunning = false;
+    public IEnumerator WaitForMouseClick(int x, int y)
     {
-        if(allowedMoves[x,y])
+        while(true)
         {
-            if (selectedPawn.isWhite)
+            isWaitForMouseClickIsRunning = true;
+            if (Input.GetMouseButtonDown(1))
             {
-                if (selectedPawn.CurrentX == x && selectedPawn.CurrentY < y)
-                {
 
-                    if (y+1 != 5 && Pawns[x, y + 1] != null && Pawns[x, y + 1].isWhite != isWhiteTurn)
+                isWaitForMouseClickIsRunning = false;
+                yield break;
+            }
+            yield return null;
+        }
+    }
+
+    public bool NextBeating(int x, int y)
+    {
+        allowedMoves = Pawns[x, y].PossibleMove();
+        int flag = 0;
+        if(y < 3)
+        {
+            if (Pawns[x, y + 2] != null && Pawns[x, y + 2].isWhite != isWhiteTurn && Pawns[x, y + 1] == null)
+            {
+                int pomx = x;
+                int pomy = y + 2;
+                while (pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomy++;
+                    nextBeat[0]++;
+                }
+                flag = 1;
+            }
+        }
+        if (y < 3 && x < 7 && allowedMoves[x+1,y+1])
+        {
+            if (Pawns[x + 2, y + 2] != null && Pawns[x + 2, y + 2].isWhite != isWhiteTurn && Pawns[x + 1, y + 1] == null)
+            {
+                int pomx = x + 2;
+                int pomy = y + 2;
+                while (pomy < 5 && pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomx++;
+                    pomy++;
+                    nextBeat[1]++;
+                }
+                flag = 1;
+            }
+        }
+        if (y < 3 && x > 1 && allowedMoves[x - 1, y + 1])
+        {
+            if (Pawns[x - 2, y + 2] != null && Pawns[x - 2, y + 2].isWhite != isWhiteTurn && Pawns[x - 1, y + 1] == null)
+            {
+                int pomx = x - 2;
+                int pomy = y + 2;
+                while (pomy < 5 && pomx > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomx--;
+                    pomy++;
+                    nextBeat[2]++;
+                }
+                flag = 1;
+            }
+        }
+        if (y > 1 && x > 1 && allowedMoves[x - 1, y - 1])
+        {
+            if (Pawns[x - 2, y - 2] != null && Pawns[x - 2, y - 2].isWhite != isWhiteTurn && Pawns[x - 1, y - 1] == null)
+            {
+                int pomx = x - 2;
+                int pomy = y - 2;
+                while (pomy > -1 && pomx > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomx--;
+                    pomy--;
+                    nextBeat[3]++;
+                }
+                flag = 1;
+            }
+        }
+        if (y > 1 && x < 7 && allowedMoves[x + 1, y - 1])
+        {
+            if (Pawns[x + 2, y - 2] != null && Pawns[x + 2, y - 2].isWhite != isWhiteTurn && Pawns[x + 1, y - 1] == null)
+            {
+                int pomx = x + 2;
+                int pomy = y - 2;
+                while (pomy > -1 && pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomx++;
+                    pomy--;
+                    nextBeat[4]++;
+                }
+                flag = 1;
+            }
+        }
+        if (y > 1)
+        {
+            if (Pawns[x, y - 2] != null && Pawns[x, y - 2].isWhite != isWhiteTurn && Pawns[x, y - 1] == null)
+            {
+                int pomx = x;
+                int pomy = y - 2;
+                while (pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomy--;
+                    nextBeat[5]++;
+                }
+                flag = 1;
+            }
+        }
+        if (x > 1)
+        {
+            if (Pawns[x - 2, y] != null && Pawns[x - 2, y].isWhite != isWhiteTurn && Pawns[x - 1, y] == null)
+            {
+                int pomx = x - 1;
+                int pomy = y;
+                while (pomx > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomx--;
+                    nextBeat[6]++;
+                }
+                flag = 1;
+            }
+        }
+        if (x < 7)
+        {
+            if (Pawns[x + 2, y] != null && Pawns[x + 2, y].isWhite != isWhiteTurn && Pawns[x + 2, y] == null)
+            {
+                int pomx = x + 2;
+                int pomy = y;
+                while (pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomx++;
+                    nextBeat[6]++;
+                }
+                flag = 1;
+            }
+        }
+        if(y > 0 && y < 4)
+        {
+            if (Pawns[x, y - 1] != null && Pawns[x, y - 1].isWhite != isWhiteTurn && Pawns[x, y + 1] == null)
+            {
+                int pomx = x;
+                int pomy = y;
+                while (pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomy--;
+                    nextBeat[6]++;
+                }
+                flag = 1;
+            }
+        }
+        if (y > 0 && y < 4 && x > 0 && x < 8 && allowedMoves[x + 1, y + 1])
+        {
+            if (Pawns[x - 1, y - 1] != null && Pawns[x - 1, y - 1].isWhite != isWhiteTurn && Pawns[x + 1, y + 1] == null)
+            {
+                int pomx = x - 1;
+                int pomy = y - 1;
+                while (pomy > -1 && pomx > - 1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomy--;
+                    pomx--;
+                    nextBeat[6]++;
+                }
+                flag = 1;
+            }
+        }
+        if (y > 0 && y < 4 && x > 0 && x < 8 && allowedMoves[x - 1, y + 1])
+        {
+            if (Pawns[x + 1, y - 1] != null && Pawns[x + 1, y - 1].isWhite != isWhiteTurn && Pawns[x - 1, y + 1] == null)
+            {
+                int pomx = x + 1;
+                int pomy = y - 1;
+                while (pomy > -1 && pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomy--;
+                    pomx++;
+                    nextBeat[6]++;
+                }
+                flag = 1;
+            }
+        }
+
+        if (y > 0 && y < 4 && x > 0 && x < 8 && allowedMoves[x - 1, y - 1])
+        {
+            if (Pawns[x + 1, y + 1] != null && Pawns[x + 1, y + 1].isWhite != isWhiteTurn && Pawns[x - 1, y - 1] == null)
+            {
+                int pomx = x + 1;
+                int pomy = y + 1;
+                while (pomy < 5 && pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomy++;
+                    pomx++;
+                    nextBeat[6]++;
+                }
+                flag = 1;
+            }
+        }
+        if (y > 0 && y < 4 && x > 0 && x < 8 && allowedMoves[x + 1, y - 1])
+        {
+            if (Pawns[x - 1, y + 1] != null && Pawns[x - 1, y + 1].isWhite != isWhiteTurn && Pawns[x + 1, y - 1] == null)
+            {
+                int pomx = x - 1;
+                int pomy = y + 1;
+                while (pomy < 5 && pomx > - 1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomy++;
+                    pomx--;
+                    nextBeat[6]++;
+                }
+                flag = 1;
+            }
+        }
+        if (y > 0 && y < 4)
+        {
+            if (Pawns[x, y + 1] != null && Pawns[x, y + 1].isWhite != isWhiteTurn && Pawns[x, y - 1] == null)
+            {
+                int pomx = x;
+                int pomy = y + 1;
+                while (pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomy++;
+                    nextBeat[6]++;
+                }
+                flag = 1;
+            }
+        }
+        if (x > 0 && x < 8)
+        {
+            if (Pawns[x + 1, y] != null && Pawns[x + 1, y].isWhite != isWhiteTurn && Pawns[x - 1, y] == null)
+            {
+                int pomx = x + 1;
+                int pomy = y;
+                while (pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomx++;
+                    nextBeat[6]++;
+                }
+                flag = 1;
+            }
+        }
+        if (x > 0 && x < 8)
+        {
+            if (Pawns[x - 1, y] != null && Pawns[x - 1, y].isWhite != isWhiteTurn && Pawns[x + 1, y] == null)
+            {
+                int pomx = x - 1;
+                int pomy = y;
+                while (pomx > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                {
+                    pomx++;
+                    nextBeat[6]++;
+                }
+                flag = 1;
+            }
+        }
+        if (flag == 0)
+           return false;
+        else
+           return true;
+    }
+
+
+    
+    private IEnumerator MovePawn(int x, int y)
+    {
+        int pomx2 = x;
+        int pomy2 = y;
+        if (allowedMoves[x,y])
+        {
+                if (selectedPawn.CurrentX == x && selectedPawn.CurrentY < y) //Forward White
+                {
+                    if (y+1 != 5 && selectedPawn.CurrentY != 0 && Pawns[x, y + 1] != null && Pawns[x, y + 1].isWhite != isWhiteTurn && Pawns[x, selectedPawn.CurrentY - 1] != null && Pawns[x, selectedPawn.CurrentY - 1].isWhite != isWhiteTurn)
+                    {
+                        
+                        yield return StartCoroutine(WaitForMouseClick(x, y));
+                        RaycastHit hit;
+                        Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("BoardPlane"));
+                        if ((int)hit.point.x == selectedPawn.CurrentX && (int)hit.point.z != selectedPawn.CurrentY)
+                        {
+                            if ((int)hit.point.z > selectedPawn.CurrentY)
+                            {
+                                int pomx = x;
+                                int pomy = y + 1;
+                                while (pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomy++;
+                                }
+                                didBeat = true;
+                            }
+                            else
+                            {
+                                int pomx = x;
+                                int pomy = y - 2;
+                                while (pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomy--;
+                                }
+                                didBeat = true;
+                            }
+                        }
+
+                    }
+                    else if (y+1 != 5 && Pawns[x, y + 1] != null && Pawns[x, y + 1].isWhite != isWhiteTurn)
                     {
                         int pomx = x;
                         int pomy = y + 1;
-                        while (pomy < 5 && Pawns[pomx, pomy] != null && !Pawns[pomx,pomy].isWhite)
+                        while (pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
                         {
 
                             activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
                             Destroy(Pawns[pomx, pomy].gameObject);
                             pomy++;
                         }
+                        didBeat = true;
+                    }
+                    else if (y - 2 > -1 && Pawns[x,y-2] != null && Pawns[x, y-2].isWhite != isWhiteTurn)
+                    {
+                        int pomx = x;
+                        int pomy = y - 2;
+                        while (pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                        {
+
+                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                            Destroy(Pawns[pomx, pomy].gameObject);
+                            pomy--;
+                        }
+                        didBeat = true;
                     }
 
                 }
 
-                if (selectedPawn.CurrentX < x && selectedPawn.CurrentY < y)
+                if (selectedPawn.CurrentX < x && selectedPawn.CurrentY < y) //Diagonal Forward Right
                 {
-                    if (x+1 != 9 && y+1 != 5 && Pawns[x + 1, y + 1] != null && Pawns[x + 1, y + 1].isWhite != isWhiteTurn)
+                    if (x+1 != 9 && y + 1 != 5 && selectedPawn.CurrentY != 0 && selectedPawn.CurrentX != 0 && Pawns[x + 1, y + 1] != null && Pawns[x + 1, y + 1].isWhite != isWhiteTurn && Pawns[selectedPawn.CurrentX -1, selectedPawn.CurrentY - 1] != null && Pawns[selectedPawn.CurrentX - 1, selectedPawn.CurrentY - 1].isWhite != isWhiteTurn)
+                    {
+
+                        yield return StartCoroutine(WaitForMouseClick(x, y));
+                        RaycastHit hit;
+                        Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("BoardPlane"));
+                        if ((int)hit.point.x != selectedPawn.CurrentX)
+                        {
+                            if ((int)hit.point.x > selectedPawn.CurrentX)
+                            {
+                                int pomx = x + 1;
+                                int pomy = y + 1;
+                                while (pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomy++;
+                                    pomx++;
+                                }
+                                didBeat = true;
+                            }
+                            else
+                            {
+                                int pomx = x - 2;
+                                int pomy = y - 2;
+                                while (pomy > -1 && pomx > - 1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomy--;
+                                    pomx--;
+                                }
+                                didBeat = true;
+                            }
+                        }
+
+                    }
+                    else if (x+1 != 9 && y+1 != 5 && Pawns[x + 1, y + 1] != null && Pawns[x + 1, y + 1].isWhite != isWhiteTurn)
                     {
                         int pomx = x + 1;
                         int pomy = y + 1;
-                        while (pomx < 9 && pomy < 5 && Pawns[pomx, pomy] != null && !Pawns[pomx, pomy].isWhite)
+                        while (pomx < 9 && pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
                         {
 
                             activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
@@ -101,17 +475,70 @@ public class BoardManager : MonoBehaviour {
                             pomx++;
                             pomy++;
                         }
+                        didBeat = true;
+                    }
+                    else if(x-2 > -1 && y - 2 > -1 && Pawns[x - 2, y - 2] != null && Pawns[x - 2, y - 2].isWhite != isWhiteTurn)
+                    {
+                        int pomx = x - 2;
+                        int pomy = y - 2;
+                        while (pomy > -1 && pomx > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                        {
 
+                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                            Destroy(Pawns[pomx, pomy].gameObject);
+                            pomy--;
+                            pomx--;
+                        }
+                        didBeat = true;
                     }
                 }
 
-                if (selectedPawn.CurrentX > x && selectedPawn.CurrentY < y)
+                if (selectedPawn.CurrentX > x && selectedPawn.CurrentY < y) //Diagonal Forward Left
                 {
-                    if (x -1 != -1 && y + 1 != 5 && Pawns[x - 1, y + 1] != null && Pawns[x - 1, y + 1].isWhite != isWhiteTurn)
+                    if (x - 1 != 0 && y + 1 != 5 && selectedPawn.CurrentY != 0 && selectedPawn.CurrentX != 8 && Pawns[x - 1, y + 1] != null && Pawns[x - 1, y + 1].isWhite != isWhiteTurn && Pawns[selectedPawn.CurrentX + 1, selectedPawn.CurrentY - 1] != null && Pawns[selectedPawn.CurrentX + 1, selectedPawn.CurrentY - 1].isWhite != isWhiteTurn)
+                    {
+
+                        yield return StartCoroutine(WaitForMouseClick(x, y));
+                        RaycastHit hit;
+                        Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("BoardPlane"));
+                        if ((int)hit.point.x != selectedPawn.CurrentX)
+                        {
+                            if ((int)hit.point.x < selectedPawn.CurrentX)
+                            {
+                                int pomx = x - 1;
+                                int pomy = y + 1;
+                                while (pomx > -1 && pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomy++;
+                                    pomx--;
+                                }
+                                didBeat = true;
+                            }
+                            else
+                            {
+                                int pomx = x + 2;
+                                int pomy = y - 2;
+                                while (pomy > -1 && pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomy--;
+                                    pomx++;
+                                }
+                                didBeat = true;
+                            }
+                        }
+
+                    }
+                    else if (x - 1 != -1 && y + 1 != 5 && Pawns[x - 1, y + 1] != null && Pawns[x - 1, y + 1].isWhite != isWhiteTurn)
                     {
                         int pomx = x - 1;
                         int pomy = y + 1;
-                        while (pomx > -1 && pomy < 5 && Pawns[pomx, pomy] != null && !Pawns[pomx, pomy].isWhite)
+                        while (pomx > -1 && pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
                         {
 
                             activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
@@ -119,51 +546,206 @@ public class BoardManager : MonoBehaviour {
                             pomx--;
                             pomy++;
                         }
+                        didBeat = true;
 
+                    }
+                    else if (x + 2 < 9 && y - 2 > -1 && Pawns[x + 2, y - 2] != null && Pawns[x + 2, y - 2].isWhite != isWhiteTurn)
+                    {
+                        int pomx = x + 2;
+                        int pomy = y - 2;
+                        while (pomy > -1 && pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                        {
+
+                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                            Destroy(Pawns[pomx, pomy].gameObject);
+                            pomy--;
+                            pomx++;
+                        }
+                        didBeat = true;
                     }
                 }
 
-                if (selectedPawn.CurrentX < x && selectedPawn.CurrentY == y)
+                if (selectedPawn.CurrentX < x && selectedPawn.CurrentY == y) //Right
                 {
-                    if (x + 1 != 9 &&  Pawns[x + 1, y] != null && Pawns[x + 1, y].isWhite != isWhiteTurn)
+                    if (x + 1 != 9 && selectedPawn.CurrentX != 0 && Pawns[x + 1, y] != null && Pawns[x + 1, y].isWhite != isWhiteTurn && Pawns[selectedPawn.CurrentX - 1, selectedPawn.CurrentY] != null && Pawns[selectedPawn.CurrentX - 1, selectedPawn.CurrentY].isWhite != isWhiteTurn)
+                    {
+
+                        yield return StartCoroutine(WaitForMouseClick(x, y));
+                        RaycastHit hit;
+                        Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("BoardPlane"));
+                        if ((int)hit.point.x != selectedPawn.CurrentX)
+                        {
+                            if ((int)hit.point.x > selectedPawn.CurrentX)
+                            {
+                                int pomx = x + 1;
+                                int pomy = y;
+                                while (pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomx++;
+                                }
+                                didBeat = true;
+                            }
+                            else
+                            {
+                                int pomx = x - 2;
+                                int pomy = y;
+                                while (pomx > - 1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomx--;
+                                }
+                                didBeat = true;
+                            }
+                        }
+
+                    }
+                    else if (x + 1 != 9 &&  Pawns[x + 1, y] != null && Pawns[x + 1, y].isWhite != isWhiteTurn)
                     {
                         int pomx = x + 1;
                         int pomy = y;
-                        while (pomx < 9 && Pawns[pomx, pomy] != null && !Pawns[pomx, pomy].isWhite)
+                        while (pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
                         {
 
                             activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
                             Destroy(Pawns[pomx, pomy].gameObject);
                             pomx++;
                         }
-
+                        didBeat = true;
                     }
+                    else if(x - 2 > -1 && Pawns[x -2, y] != null && Pawns[x - 2, y].isWhite != isWhiteTurn)
+                    {
+                        int pomx = x - 2;
+                        int pomy = y;
+                        while (pomx > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                        {
+
+                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                            Destroy(Pawns[pomx, pomy].gameObject);
+                            pomx--;
+                        }
+                        didBeat = true;
+                    }
+                    
                 }
 
                 if (selectedPawn.CurrentX > x && selectedPawn.CurrentY == y)
                 {
-                    if (x - 1 != -1 && Pawns[x - 1, y] != null && Pawns[x - 1, y].isWhite != isWhiteTurn)
+                    if (x - 1 != -1 && selectedPawn.CurrentX != 8 && Pawns[x - 1, y] != null && Pawns[x - 1, y].isWhite != isWhiteTurn && Pawns[selectedPawn.CurrentX + 1, selectedPawn.CurrentY] != null && Pawns[selectedPawn.CurrentX + 1, selectedPawn.CurrentY].isWhite != isWhiteTurn)
+                    {
+
+                        yield return StartCoroutine(WaitForMouseClick(x, y));
+                        RaycastHit hit;
+                        Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("BoardPlane"));
+                        if ((int)hit.point.x != selectedPawn.CurrentX)
+                        {
+                            if ((int)hit.point.x < selectedPawn.CurrentX)
+                            {
+                                int pomx = x - 1;
+                                int pomy = y;
+                                while (pomx > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomx--;
+                                }
+                                didBeat = true;
+                            }
+                            else
+                            {
+                                int pomx = x + 2;
+                                int pomy = y;
+                                while (pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomx++;
+                                }
+                                didBeat = true;
+                            }
+                        }
+
+                    }
+                    else if (x - 1 != -1 && Pawns[x - 1, y] != null && Pawns[x - 1, y].isWhite != isWhiteTurn)
                     {
                         int pomx = x - 1;
                         int pomy = y;
-                        while (pomx > -1 && Pawns[pomx, pomy] != null && !Pawns[pomx, pomy].isWhite)
+                        while (pomx > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
                         {
 
                             activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
                             Destroy(Pawns[pomx, pomy].gameObject);
                             pomx--;
                         }
+                        didBeat = true;
+                    }
+                    else if(x + 2 < 9 && Pawns[x + 2, y] != null && Pawns[x + 2, y].isWhite != isWhiteTurn)
+                    {
+                        int pomx = x + 2;
+                        int pomy = y;
+                        while (pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                        {
 
+                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                            Destroy(Pawns[pomx, pomy].gameObject);
+                            pomx++;
+                        }
+                        didBeat = true;
                     }
                 }
 
                 if (selectedPawn.CurrentX < x && selectedPawn.CurrentY > y)
                 {
-                    if (x + 1 != 9 && y - 1 != -1 && Pawns[x + 1, y - 1] != null && Pawns[x + 1, y - 1].isWhite != isWhiteTurn)
+                    if (x + 1 != 9 && y - 1 !=  -1 && selectedPawn.CurrentX != 8 && selectedPawn.CurrentY != 0 && Pawns[x + 1, y - 1] != null && Pawns[x + 1, y - 1].isWhite != isWhiteTurn && Pawns[selectedPawn.CurrentX - 1, selectedPawn.CurrentY + 1] != null && Pawns[selectedPawn.CurrentX - 1, selectedPawn.CurrentY + 1].isWhite != isWhiteTurn)
+                    {
+
+                        yield return StartCoroutine(WaitForMouseClick(x, y));
+                        RaycastHit hit;
+                        Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("BoardPlane"));
+                        if ((int)hit.point.x != selectedPawn.CurrentX)
+                        {
+                            if ((int)hit.point.x > selectedPawn.CurrentX)
+                            {
+                                int pomx = x + 1;
+                                int pomy = y - 1;
+                                while (pomx < 9 && pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomx++;
+                                    pomy--;
+                                }
+                                didBeat = true;
+                            }
+                            else
+                            {
+                                int pomx = x - 2;
+                                int pomy = y + 2;
+                                while (pomx > - 1 && pomy < 5  && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomx--;
+                                    pomy++;
+                                }
+                                didBeat = true;
+                            }
+                        }
+
+                    }
+                    else if (x + 1 != 9 && y - 1 != -1 && Pawns[x + 1, y - 1] != null && Pawns[x + 1, y - 1].isWhite != isWhiteTurn)
                     {
                         int pomx = x + 1;
                         int pomy = y - 1;
-                        while (pomx < 9 && pomy > -1 && Pawns[pomx, pomy] != null && !Pawns[pomx, pomy].isWhite)
+                        while (pomx < 9 && pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
                         {
 
                             activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
@@ -171,17 +753,70 @@ public class BoardManager : MonoBehaviour {
                             pomx++;
                             pomy--;
                         }
+                        didBeat = true;
+                    }
+                    else if(x - 2 > -1 && y + 2 < 5 && Pawns[x - 2, y + 2] != null && Pawns[x - 2, y + 2].isWhite != isWhiteTurn)
+                    {
+                        int pomx = x - 2;
+                        int pomy = y + 2;
+                        while (pomx > -1 && pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                        {
 
+                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                            Destroy(Pawns[pomx, pomy].gameObject);
+                            pomx--;
+                            pomy++;
+                        }
+                        didBeat = true;
                     }
                 }
 
                 if (selectedPawn.CurrentX > x && selectedPawn.CurrentY > y)
                 {
-                    if (x - 1 != -1 && y - 1 != -1 && Pawns[x - 1, y - 1] != null && Pawns[x - 1, y - 1].isWhite != isWhiteTurn)
+                    if (x - 1 != 9 && y - 1 != -1 && selectedPawn.CurrentX != 0 && selectedPawn.CurrentY != 0 && Pawns[x - 1, y - 1] != null && Pawns[x - 1, y - 1].isWhite != isWhiteTurn && Pawns[selectedPawn.CurrentX + 1, selectedPawn.CurrentY + 1] != null && Pawns[selectedPawn.CurrentX + 1, selectedPawn.CurrentY + 1].isWhite != isWhiteTurn)
+                    {
+
+                        yield return StartCoroutine(WaitForMouseClick(x, y));
+                        RaycastHit hit;
+                        Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("BoardPlane"));
+                        if ((int)hit.point.x != selectedPawn.CurrentX)
+                        {
+                            if ((int)hit.point.x < selectedPawn.CurrentX)
+                            {
+                                int pomx = x - 1;
+                                int pomy = y - 1;
+                                while (pomx > -1 && pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomx--;
+                                    pomy--;
+                                }
+                                didBeat = true;
+                            }
+                            else
+                            {
+                                int pomx = x + 2;
+                                int pomy = y + 2;
+                                while (pomx < 9 && pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomx++;
+                                    pomy++;
+                                }
+                                didBeat = true;
+                            }
+                        }
+
+                    }
+                    else if (x - 1 != -1 && y - 1 != -1 && Pawns[x - 1, y - 1] != null && Pawns[x - 1, y - 1].isWhite != isWhiteTurn)
                     {
                         int pomx = x - 1;
                         int pomy = y - 1;
-                        while (pomx > -1 && pomy > -1 && Pawns[pomx, pomy] != null && !Pawns[pomx, pomy].isWhite)
+                        while (pomx > -1 && pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
                         {
 
                             activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
@@ -189,178 +824,105 @@ public class BoardManager : MonoBehaviour {
                             pomx--;
                             pomy--;
                         }
+                        didBeat = true;
+                    }
+                    else if(x + 2 < 9 && y + 2 < 5 && Pawns[x + 2, y + 2] != null && Pawns[x + 2, y + 2].isWhite != isWhiteTurn)
+                    {
+                        int pomx = x + 2;
+                        int pomy = y + 2;
+                        while (pomx < 9 && pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                        {
 
+                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                            Destroy(Pawns[pomx, pomy].gameObject);
+                            pomx++;
+                            pomy++;
+                        }
+                        didBeat = true;
                     }
                 }
 
                 if (selectedPawn.CurrentX == x && selectedPawn.CurrentY > y)
                 {
-                    if (y - 1 != -1 && Pawns[x, y - 1] != null && Pawns[x, y - 1].isWhite != isWhiteTurn)
+                    if (y - 1 != -1 && selectedPawn.CurrentY != 4 && Pawns[x, y - 1] != null && Pawns[x, y - 1].isWhite != isWhiteTurn && Pawns[x, selectedPawn.CurrentY + 1] != null && Pawns[x, selectedPawn.CurrentY + 1].isWhite != isWhiteTurn)
+                    {
+
+                        yield return StartCoroutine(WaitForMouseClick(x, y));
+                        RaycastHit hit;
+                        Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("BoardPlane"));
+                        if ((int)hit.point.z != selectedPawn.CurrentY)
+                        {
+                            if ((int)hit.point.z < selectedPawn.CurrentY)
+                            {
+                                int pomx = x;
+                                int pomy = y - 1;
+                                while (pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomy--;
+                                }
+                                didBeat = true;
+                            }
+                            else
+                            {
+                                int pomx = x;
+                                int pomy = y + 2;
+                                while (pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
+                                {
+
+                                    activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
+                                    Destroy(Pawns[pomx, pomy].gameObject);
+                                    pomy++;
+                                }
+                                didBeat = true;
+                            }
+                        }
+
+                    }
+                    else if (y - 1 != -1 && Pawns[x, y - 1] != null && Pawns[x, y - 1].isWhite != isWhiteTurn)
                     {
                         int pomx = x;
                         int pomy = y - 1;
-                        while (pomy > -1 && Pawns[pomx, pomy] != null && !Pawns[pomx, pomy].isWhite)
+                        while (pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
                         {
 
                             activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
                             Destroy(Pawns[pomx, pomy].gameObject);
                             pomy--;
                         }
-
+                        didBeat = true;
                     }
-                }
-            }
-            else
-            {
-                if (selectedPawn.CurrentX == x && selectedPawn.CurrentY > y)
-                {
-
-                    if (y - 1 != -1 && Pawns[x, y - 1] != null && Pawns[x, y - 1].isWhite != isWhiteTurn)
+                    else if (y + 2 < 5 && Pawns[x, y + 2] != null && Pawns[x, y + 2].isWhite != isWhiteTurn)
                     {
                         int pomx = x;
-                        int pomy = y - 1;
-                        while (pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite)
-                        {
-
-                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
-                            Destroy(Pawns[pomx, pomy].gameObject);
-                            pomy--;
-                        }
-                    }
-
-                }
-
-                if (selectedPawn.CurrentX < x && selectedPawn.CurrentY > y)
-                {
-                    if (x + 1 != 9 && y - 1 != -1 && Pawns[x + 1, y - 1] != null && Pawns[x + 1, y - 1].isWhite != isWhiteTurn)
-                    {
-                        int pomx = x + 1;
-                        int pomy = y - 1;
-                        while (pomx < 9 && pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite)
-                        {
-
-                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
-                            Destroy(Pawns[pomx, pomy].gameObject);
-                            pomx++;
-                            pomy--;
-                        }
-
-                    }
-                }
-
-                if (selectedPawn.CurrentX > x && selectedPawn.CurrentY > y)
-                {
-                    if (x - 1 != -1 && y -1 != -1 && Pawns[x - 1, y - 1] != null && Pawns[x - 1, y - 1].isWhite != isWhiteTurn)
-                    {
-                        int pomx = x - 1;
-                        int pomy = y - 1;
-                        while (pomx > -1 && pomy > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite)
-                        {
-
-                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
-                            Destroy(Pawns[pomx, pomy].gameObject);
-                            pomx--;
-                            pomy--;
-                        }
-
-                    }
-                }
-
-                if (selectedPawn.CurrentX > x && selectedPawn.CurrentY == y)
-                {
-                    if (x - 1 != -1 && Pawns[x - 1, y] != null && Pawns[x - 1, y].isWhite != isWhiteTurn)
-                    {
-                        int pomx = x - 1;
-                        int pomy = y;
-                        while (pomx > -1 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite)
-                        {
-
-                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
-                            Destroy(Pawns[pomx, pomy].gameObject);
-                            pomx--;
-                        }
-
-                    }
-                }
-
-                if (selectedPawn.CurrentX < x && selectedPawn.CurrentY == y)
-                {
-                    if (x + 1 != 9 && Pawns[x + 1, y] != null && Pawns[x + 1, y].isWhite != isWhiteTurn)
-                    {
-                        int pomx = x + 1;
-                        int pomy = y;
-                        while (pomx < 9 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite)
-                        {
-
-                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
-                            Destroy(Pawns[pomx, pomy].gameObject);
-                            pomx++;
-                        }
-
-                    }
-                }
-
-                if (selectedPawn.CurrentX > x && selectedPawn.CurrentY < y)
-                {
-                    if (x - 1 != -1 && y + 1 != 5 && Pawns[x - 1, y + 1] != null && Pawns[x - 1, y + 1].isWhite != isWhiteTurn)
-                    {
-                        int pomx = x - 1;
-                        int pomy = y + 1;
-                        while (pomx > -1 && pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite)
-                        {
-
-                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
-                            Destroy(Pawns[pomx, pomy].gameObject);
-                            pomx--;
-                            pomy++;
-                        }
-
-                    }
-                }
-
-                if (selectedPawn.CurrentX < x && selectedPawn.CurrentY < y)
-                {
-                    if (x + 1 != 9 && y + 1 != 5 && Pawns[x + 1, y + 1] != null && Pawns[x + 1, y + 1].isWhite != isWhiteTurn)
-                    {
-                        int pomx = x + 1;
-                        int pomy = y + 1;
-                        while (pomx < 9 && pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite)
-                        {
-
-                            activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
-                            Destroy(Pawns[pomx, pomy].gameObject);
-                            pomx++;
-                            pomy++;
-                        }
-
-                    }
-                }
-
-                if (selectedPawn.CurrentX == x && selectedPawn.CurrentY < y)
-                {
-                    if (y + 1 != 5 && Pawns[x, y + 1] != null && Pawns[x, y + 1].isWhite != isWhiteTurn)
-                    {
-                        int pomx = x;
-                        int pomy = y + 1;
-                        while (pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite)
+                        int pomy = y + 2;
+                        while (pomy < 5 && Pawns[pomx, pomy] != null && Pawns[pomx, pomy].isWhite != isWhiteTurn)
                         {
 
                             activeDraughtsman.Remove(Pawns[pomx, pomy].gameObject);
                             Destroy(Pawns[pomx, pomy].gameObject);
                             pomy++;
                         }
-
+                        didBeat = true;
                     }
                 }
-            }
+            
+           
 
 
+                Pawns[selectedPawn.CurrentX, selectedPawn.CurrentY] = null;
+                selectedPawn.transform.position = GetTileCenter(x, y);
+                selectedPawn.setPosition(x, y);
+                Pawns[x, y] = selectedPawn;
 
-            Pawns[selectedPawn.CurrentX, selectedPawn.CurrentY] = null;
-            selectedPawn.transform.position = GetTileCenter(x, y);
-            selectedPawn.setPosition(x, y);
-            Pawns[x, y] = selectedPawn;
             isWhiteTurn = !isWhiteTurn;
+            if(selectedPawn.CurrentX != x || selectedPawn.CurrentY != y)
+
+            if (isFirstRound == true && !isWhiteTurn)
+                isFirstRound = false;
+             
         }
 
         BoardHighlights.Instance.HideHighlights();

@@ -23,7 +23,7 @@ public class Pawn : MonoBehaviour
         {
 
             //Diagonal Left
-            if (CurrentX != 0 && CurrentY != 4 && ((CurrentX % 2 != 0 && CurrentY % 2 != 0) || (CurrentX % 2 == 0 && CurrentY % 2 == 0))) ;
+            if (CurrentX != 0 && CurrentY != 4 && ((CurrentX % 2 != 0 && CurrentY % 2 != 0) || (CurrentX % 2 == 0 && CurrentY % 2 == 0)))
             {               
               
                 if (BoardManager.Instance.Pawns[CurrentX - 1, CurrentY + 1] != null)
@@ -33,7 +33,7 @@ public class Pawn : MonoBehaviour
             }
 
             //Diagonal Right
-            if (CurrentX != 8 && CurrentY != 4)
+            if (CurrentX != 8 && CurrentY != 4 && ((CurrentX % 2 != 0 && CurrentY % 2 != 0) || (CurrentX % 2 == 0 && CurrentY % 2 == 0)))
             {
 
                 if (BoardManager.Instance.Pawns[CurrentX + 1, CurrentY + 1] != null)
@@ -74,7 +74,7 @@ public class Pawn : MonoBehaviour
             }
 
             //Diagonal Left backward
-            if (CurrentX != 0 && CurrentY != 0)
+            if (CurrentX != 0 && CurrentY != 0 && ((CurrentX % 2 != 0 && CurrentY % 2 != 0) || (CurrentX % 2 == 0 && CurrentY % 2 == 0)))
             {
 
                 if (BoardManager.Instance.Pawns[CurrentX - 1, CurrentY - 1] != null)
@@ -84,7 +84,7 @@ public class Pawn : MonoBehaviour
             }
 
             //Diagonal Right
-            if (CurrentX != 8 && CurrentY != 0)
+            if (CurrentX != 8 && CurrentY != 0 && ((CurrentX % 2 != 0 && CurrentY % 2 != 0) || (CurrentX % 2 == 0 && CurrentY % 2 == 0)))
             {
 
                 if (BoardManager.Instance.Pawns[CurrentX + 1, CurrentY - 1] != null)
@@ -111,7 +111,7 @@ public class Pawn : MonoBehaviour
         else
         {
             //Diagonal Left
-            if (CurrentX != 8 && CurrentY != 0)
+            if (CurrentX != 8 && CurrentY != 0 && ((CurrentX % 2 != 0 && CurrentY % 2 != 0) || (CurrentX % 2 == 0 && CurrentY % 2 == 0)))
             {
 
                 if (BoardManager.Instance.Pawns[CurrentX + 1, CurrentY - 1] != null)
@@ -121,7 +121,7 @@ public class Pawn : MonoBehaviour
             }
 
             //Diagonal Right
-            if (CurrentX != 0 && CurrentY != 0)
+            if (CurrentX != 0 && CurrentY != 0 && ((CurrentX % 2 != 0 && CurrentY % 2 != 0) || (CurrentX % 2 == 0 && CurrentY % 2 == 0)))
             {
 
                 if (BoardManager.Instance.Pawns[CurrentX - 1, CurrentY - 1] != null)
@@ -162,7 +162,7 @@ public class Pawn : MonoBehaviour
             }
 
             //Diagonal Left backward
-            if (CurrentX != 8 && CurrentY != 4)
+            if (CurrentX != 8 && CurrentY != 4 && ((CurrentX % 2 != 0 && CurrentY % 2 != 0) || (CurrentX % 2 == 0 && CurrentY % 2 == 0)))
             {
 
                 if (BoardManager.Instance.Pawns[CurrentX + 1, CurrentY + 1] != null)
@@ -172,7 +172,7 @@ public class Pawn : MonoBehaviour
             }
 
             //Diagonal Right
-            if (CurrentX != 0 && CurrentY != 4)
+            if (CurrentX != 0 && CurrentY != 4 && ((CurrentX % 2 != 0 && CurrentY % 2 != 0) || (CurrentX % 2 == 0 && CurrentY % 2 == 0)))
             {
 
                 if (BoardManager.Instance.Pawns[CurrentX - 1, CurrentY + 1] != null)
