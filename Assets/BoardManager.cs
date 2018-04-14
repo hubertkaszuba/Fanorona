@@ -34,7 +34,7 @@ public class BoardManager : MonoBehaviour
     public bool hasToBeat = false;
     public bool checkedForceToMove = false;
     public List<Pawn> forcedToMove;
-
+    
 
     private void Start()
     {
@@ -71,9 +71,9 @@ public class BoardManager : MonoBehaviour
                     BoardHighlights.Instance.HideHighlights();
                     selectedPawn = Pawns[hasX, hasY];
                     if (selectedPawn.isWhite)
-                        selectedPawn.gameObject.GetComponent<Renderer>().material.color = Color.white;
+                        selectedPawn.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/light-wood-texture", typeof(Material)) as Material;
                     else
-                        selectedPawn.gameObject.GetComponent<Renderer>().material.color = Color.black;
+                        selectedPawn.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture", typeof(Material)) as Material;
                     selectedPawn = null;
                     didBeat = false;
                     hasToBeat = false;
@@ -95,9 +95,9 @@ public class BoardManager : MonoBehaviour
                         forcedToMove.Add(selectedPawn);
                         selectedPawn = Pawns[hasX, hasY];
                         if (selectedPawn.isWhite)
-                            selectedPawn.gameObject.GetComponent<Renderer>().material.color = Color.green;
+                            selectedPawn.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/light-wood-texture-transparent-green", typeof(Material)) as Material; 
                         else
-                            selectedPawn.gameObject.GetComponent<Renderer>().material.color = Color.red;
+                            selectedPawn.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture-transparent-red", typeof(Material)) as Material;
                         BoardHighlights.Instance.HighlightAllowedMoves(forcedMoves);
                         didBeat = false;
                         hasToBeat = true;
@@ -108,9 +108,9 @@ public class BoardManager : MonoBehaviour
                         BoardHighlights.Instance.HideHighlights();
                         selectedPawn = Pawns[hasX, hasY];
                         if (selectedPawn.isWhite)
-                            selectedPawn.gameObject.GetComponent<Renderer>().material.color = Color.white;
+                            selectedPawn.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/light-wood-texture", typeof(Material)) as Material;
                         else
-                            selectedPawn.gameObject.GetComponent<Renderer>().material.color = Color.black;
+                            selectedPawn.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture", typeof(Material)) as Material;
                         selectedPawn = null;
                         didBeat = false;
                         hasToBeat = false;
@@ -144,12 +144,12 @@ public class BoardManager : MonoBehaviour
 
                     if (isWhiteTurn)
                     {
-                        forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material.color = Color.black);
+                        forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture", typeof(Material)) as Material);
                         forcedToMove.RemoveAll(p => p);
                     }
                     else
                     {
-                        forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material.color = Color.white);
+                        forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/light-wood-texture", typeof(Material)) as Material);
                         forcedToMove.RemoveAll(p => p);
                     }
                 }
@@ -175,12 +175,12 @@ public class BoardManager : MonoBehaviour
 
                         if (isWhiteTurn)
                         {
-                            forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material.color = Color.black);
+                            forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture", typeof(Material)) as Material);
                             forcedToMove.RemoveAll(p => p);
                         }
                         else
                         {
-                            forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material.color = Color.white);
+                            forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/light-wood-texture", typeof(Material)) as Material);
                             forcedToMove.RemoveAll(p => p);
                         }
                     }
@@ -234,7 +234,7 @@ public class BoardManager : MonoBehaviour
     {
         GameObject go = Instantiate(draughtsmanPrefabs[index], GetTileCenter(x, y), Quaternion.identity) as GameObject;
         go.transform.SetParent(transform);
-        go.GetComponent<Renderer>().material.color = Color.black;
+        go.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture", typeof(Material)) as Material;
         Pawns[x, y] = go.GetComponent<Pawn>();
         Pawns[x, y].setPosition(x, y);
         activeDraughtsman.Add(go);
@@ -244,7 +244,7 @@ public class BoardManager : MonoBehaviour
     {
         GameObject go = Instantiate(draughtsmanPrefabs[index], GetTileCenter(x, y), orientation) as GameObject;
         go.transform.SetParent(transform);
-        go.GetComponent<Renderer>().material.color = Color.white;
+        go.GetComponent<Renderer>().material = Resources.Load("Materials/light-wood-texture", typeof(Material)) as Material;
         Pawns[x, y] = go.GetComponent<Pawn>();
         Pawns[x, y].setPosition(x, y);
         activeDraughtsman.Add(go);
@@ -322,9 +322,9 @@ public class BoardManager : MonoBehaviour
                         if (NextBeating(i, j))
                         {
                             if (Pawns[i, j].isWhite)
-                                Pawns[i, j].gameObject.GetComponent<Renderer>().material.color = Color.green;
+                                Pawns[i, j].gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/light-wood-texture-transparent-green", typeof(Material)) as Material;
                             else
-                                Pawns[i, j].gameObject.GetComponent<Renderer>().material.color = Color.red;
+                                Pawns[i, j].gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture-transparent-red", typeof(Material)) as Material;
                             forcedToMove.Add(Pawns[i, j]);
                         }
                     }

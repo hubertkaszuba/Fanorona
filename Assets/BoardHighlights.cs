@@ -38,7 +38,7 @@ public class BoardHighlights : MonoBehaviour {
                 {
                     GameObject go = GetHighlightObject();
                     go.SetActive(true);
-                    go.gameObject.GetComponent<Renderer>().material.color = Color.white;
+                    go.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/Next", typeof(Material)) as Material; 
                     go.transform.position = new Vector3(i+0.5f, 0, j+0.5f);
                 }
             }
@@ -55,7 +55,7 @@ public class BoardHighlights : MonoBehaviour {
                 {
                     GameObject go = GetHighlightObject();
                     go.SetActive(true);
-                    go.gameObject.GetComponent<Renderer>().material.color = Color.blue;
+                    go.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/Past", typeof(Material)) as Material; 
                     go.transform.position = new Vector3(i + 0.5f, 0, j + 0.5f);
                 }
             }
