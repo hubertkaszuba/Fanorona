@@ -34,8 +34,9 @@ public class BoardManager : MonoBehaviour
     public bool hasToBeat = false;
     public bool checkedForceToMove = false;
     public List<Pawn> forcedToMove;
-    
-
+    public bool hasMoved = false;
+    int moveX = -1;
+    int moveY = -1;
     private void Start()
     {
         Instance = this;
@@ -62,7 +63,7 @@ public class BoardManager : MonoBehaviour
         }
         else
         {
-            if(didBeat)
+            if(didBeat && !hasMoved)
             {
                 isWhiteTurn = !isWhiteTurn;
                 if(!NextBeating(hasX, hasY))
@@ -128,7 +129,7 @@ public class BoardManager : MonoBehaviour
 
 
 
-        if (Input.GetMouseButton(0) || Input.GetMouseButton(1))
+        if ((Input.GetMouseButton(0) || Input.GetMouseButton(1)) && (!hasMoved || isWaitForMouseClickIsRunning))
         {
             if (selectionX >= 0 && selectionY >= 0)
             {
@@ -140,8 +141,10 @@ public class BoardManager : MonoBehaviour
                 else if (selectedPawn != null && forcedMoves[selectionX, selectionY] == true)
                 {
                     StartCoroutine(MovePawn(selectionX, selectionY));
-                    checkedForceToMove = false;
-
+                    
+                    hasMoved = true;
+                    moveX = selectionX;
+                    moveY = selectionY;
                     if (isWhiteTurn)
                     {
                         forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture", typeof(Material)) as Material);
@@ -171,8 +174,10 @@ public class BoardManager : MonoBehaviour
                     if (!Pawns[selectionX, selectionY])
                     {
                         StartCoroutine(MovePawn(selectionX, selectionY));
-                        checkedForceToMove = false;
-
+                        
+                        hasMoved = true;
+                        moveX = selectionX;
+                        moveY = selectionY;
                         if (isWhiteTurn)
                         {
                             forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture", typeof(Material)) as Material);
@@ -200,7 +205,22 @@ public class BoardManager : MonoBehaviour
 
             }
         }
-
+        if (hasMoved && !isWaitForMouseClickIsRunning)
+        {
+            StartCoroutine(transformPosition(moveX, moveY));
+            if(endMove)
+            {
+                Pawns[selectedPawn.CurrentX, selectedPawn.CurrentY] = null;
+                selectedPawn.setPosition(moveX, moveY);
+                Pawns[moveX, moveY] = selectedPawn;
+                selectedPawn = null;
+                checkedForceToMove = false;
+                hasMoved = false;
+                endMove = false;
+            }
+        }
+        //BoardHighlights.Instance.HideHighlights();
+        //selectedPawn = null;
     }
 
     public void AddPreviousPositions()
@@ -487,7 +507,7 @@ public class BoardManager : MonoBehaviour
         }
         if (x < 7)
         {
-            if (Pawns[x + 2, y] != null && Pawns[x + 2, y].isWhite != isWhiteTurn && Pawns[x + 2, y] == null)
+            if (Pawns[x + 2, y] != null && Pawns[x + 2, y].isWhite != isWhiteTurn && Pawns[x + 1, y] == null)
             {
                 int pomx = x + 2;
                 int pomy = y;
@@ -748,7 +768,7 @@ public class BoardManager : MonoBehaviour
         }
         if (x < 7)
         {
-            if (Pawns[x + 2, y] != null && Pawns[x + 2, y].isWhite != isWhiteTurn && Pawns[x + 2, y] == null)
+            if (Pawns[x + 2, y] != null && Pawns[x + 2, y].isWhite != isWhiteTurn && Pawns[x + 1, y] == null)
             {
                 int pomx = x + 2;
                 int pomy = y;
@@ -1456,11 +1476,10 @@ public class BoardManager : MonoBehaviour
 
 
 
+            
+            
 
-            Pawns[selectedPawn.CurrentX, selectedPawn.CurrentY] = null;
-            selectedPawn.transform.position = GetTileCenter(x, y);
-            selectedPawn.setPosition(x, y);
-            Pawns[x, y] = selectedPawn;
+            BoardHighlights.Instance.HideHighlights();            
             if (countMove < 4)
                 countMove++;
 
@@ -1472,11 +1491,31 @@ public class BoardManager : MonoBehaviour
                 hasX = x;
                 hasY = y;
             }
-            BoardHighlights.Instance.HideHighlights();
-            selectedPawn = null;
+
         }
     }
-    
+    public bool endMove = false;
+    public IEnumerator transformPosition(int x, int y)
+    {
+        Vector3 velocity = Vector3.zero;
+        var targetposition = GetTileCenter(x, y);
+        Vector3 newPosition;
+        while (true)
+        {
+            newPosition = Vector3.Lerp(selectedPawn.transform.position, GetTileCenter(x, y), 0.05f);
+            if (newPosition == selectedPawn.transform.position)
+            {
+
+                selectedPawn.transform.position = newPosition;
+                endMove = true;
+                yield break;
+            }
+
+            selectedPawn.transform.position = newPosition;
+            endMove = false;
+            yield return null;
+        }
+    }
 
     private void UpdateSelection()
     {
