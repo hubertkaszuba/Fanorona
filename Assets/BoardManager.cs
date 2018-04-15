@@ -35,6 +35,7 @@ public class BoardManager : MonoBehaviour
     public bool checkedForceToMove = false;
     public List<Pawn> forcedToMove;
     public bool hasMoved = false;
+    public bool didMove = false;
     int moveX = -1;
     int moveY = -1;
     private void Start()
@@ -137,44 +138,13 @@ public class BoardManager : MonoBehaviour
                 {
                     previousPositions[hasX, hasY] = true;
                     SelectPawn(hasX, hasY);
+                    didMove = false;
                 }
                 else if (selectedPawn != null && forcedMoves[selectionX, selectionY] == true)
                 {
                     StartCoroutine(MovePawn(selectionX, selectionY));
-                    
-                    hasMoved = true;
-                    moveX = selectionX;
-                    moveY = selectionY;
-                    if (isWhiteTurn)
+                    if (didMove)
                     {
-                        forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture", typeof(Material)) as Material);
-                        forcedToMove.RemoveAll(p => p);
-                    }
-                    else
-                    {
-                        forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/light-wood-texture", typeof(Material)) as Material);
-                        forcedToMove.RemoveAll(p => p);
-                    }
-                }
-                else if (selectedPawn != null && forcedToMove.Exists(p => p.CurrentX == selectionX && p.CurrentY == selectionY) && !hasToBeat)
-                {
-                    CleanPreviousPositions();
-                    BoardHighlights.Instance.HideHighlights();
-                    previousPositions[selectionX, selectionY] = true;
-                    SelectPawn(selectionX, selectionY);
-                }
-                else if (selectedPawn == null && forcedToMove.Exists(p => p.CurrentX == selectionX && p.CurrentY == selectionY) && !hasToBeat)
-                {
-                    CleanPreviousPositions();
-                    previousPositions[selectionX, selectionY] = true;
-                    SelectPawn(selectionX, selectionY);
-                }
-                else if (selectedPawn != null && !forcedToMove.Exists(p => p))
-                {
-                    if (!Pawns[selectionX, selectionY])
-                    {
-                        StartCoroutine(MovePawn(selectionX, selectionY));
-                        
                         hasMoved = true;
                         moveX = selectionX;
                         moveY = selectionY;
@@ -189,18 +159,58 @@ public class BoardManager : MonoBehaviour
                             forcedToMove.RemoveAll(p => p);
                         }
                     }
+                }
+                else if (selectedPawn != null && forcedToMove.Exists(p => p.CurrentX == selectionX && p.CurrentY == selectionY) && !hasToBeat)
+                {
+                    CleanPreviousPositions();
+                    BoardHighlights.Instance.HideHighlights();
+                    previousPositions[selectionX, selectionY] = true;                  
+                    SelectPawn(selectionX, selectionY);
+                    didMove = false;
+                }
+                else if (selectedPawn == null && forcedToMove.Exists(p => p.CurrentX == selectionX && p.CurrentY == selectionY) && !hasToBeat)
+                {
+                    CleanPreviousPositions();
+                    previousPositions[selectionX, selectionY] = true;
+                    SelectPawn(selectionX, selectionY);
+                    didMove = false;
+                }
+                else if (selectedPawn != null && !forcedToMove.Exists(p => p))
+                {
+                    if (!Pawns[selectionX, selectionY])
+                    {
+                        StartCoroutine(MovePawn(selectionX, selectionY));
+                        if (didMove)
+                        {
+                            hasMoved = true;
+                            moveX = selectionX;
+                            moveY = selectionY;
+                            if (isWhiteTurn)
+                            {
+                                forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/dark-wood-texture", typeof(Material)) as Material);
+                                forcedToMove.RemoveAll(p => p);
+                            }
+                            else
+                            {
+                                forcedToMove.ForEach(p => p.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/light-wood-texture", typeof(Material)) as Material);
+                                forcedToMove.RemoveAll(p => p);
+                            }
+                        }
+                    }
                     else
                     {
                         forcedToMove.Clear();
                         CleanPreviousPositions();
                         BoardHighlights.Instance.HideHighlights();
                         SelectPawn(selectionX, selectionY);
+                        didMove = false;
                     }
                 }
                 else if (selectedPawn == null && !forcedToMove.Exists(p => p))
                 {
                     BoardHighlights.Instance.HideHighlights();
                     SelectPawn(selectionX, selectionY);
+                    didMove = false;
                 }
 
             }
@@ -919,6 +929,7 @@ public class BoardManager : MonoBehaviour
     {
         if (allowedMoves[x, y])
         {
+            didMove = true;
             if (selectedPawn.CurrentX == x && selectedPawn.CurrentY < y) //Forward White
             {
                 if (y + 1 != 5 && selectedPawn.CurrentY != 0 && selectedPawn.CurrentY != 4 && Pawns[x, y + 1] != null && Pawns[x, y + 1].isWhite != isWhiteTurn && Pawns[x, selectedPawn.CurrentY - 1] != null && Pawns[x, selectedPawn.CurrentY - 1].isWhite != isWhiteTurn)
