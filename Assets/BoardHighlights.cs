@@ -62,6 +62,22 @@ public class BoardHighlights : MonoBehaviour {
         }
     }
 
+    public void HighlightBeats(bool[,] moves)
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            for (int j = 0; j < 5; j++)
+            {
+                if (moves[i, j])
+                {
+                    GameObject go = GetHighlightObject();
+                    go.SetActive(true);
+                    go.gameObject.GetComponent<Renderer>().material = Resources.Load("Materials/Beat", typeof(Material)) as Material;
+                    go.transform.position = new Vector3(i + 0.5f, 0, j + 0.5f);
+                }
+            }
+        }
+    }
 
     public void HideHighlights()
     {
